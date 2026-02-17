@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "SurvivalCraft Pro",
+    "slug": "survivalcraft-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.survivalcraft.pro",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
+        "NSCameraUsageDescription": "SurvivalCraft uses the camera for the AR scan experience.",
+        "NSLocationWhenInUseUsageDescription": "SurvivalCraft can use your location for localized alerts and maps.",
+        "NSUserTrackingUsageDescription": "We do not track you across apps. (Placeholder if you later add tracking.)"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.survivalcraft.pro"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SurvivalCraft to access your camera for scanning."
+        }
+      ]
+    ]
+  }
+}
