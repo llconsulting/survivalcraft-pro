@@ -14,13 +14,7 @@ export default function OfflineMapsScreen() {
         <GlassCard style={styles.card}>
           <Text style={styles.title}>Stubbed in this build</Text>
           <Text style={styles.text}>
-            Offline map tiles are not implemented here. When you’re ready:
-            {'
-'}- pick a map provider and licensing
-            {'
-'}- implement region downloads + storage management
-            {'
-'}- add routing + POI layers (optional)
+            {`Offline map tiles are not implemented here. When you’re ready:\n- pick a map provider and licensing\n- implement region downloads + storage management\n- add routing + POI layers (optional)`}
           </Text>
         </GlassCard>
       </View>
