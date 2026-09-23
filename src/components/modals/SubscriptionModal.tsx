@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { GlassCard } from '../ui/GlassCard';
-import { TierBadge } from '../ui/TierBadge';
+import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { UserTier } from '../../types';
 import { Colors } from '../../theme/colors';
+import { sans, serif } from '../../theme/type';
 import { haptic } from '../../utils/haptics';
+import { GlassCard } from '../ui/GlassCard';
+import { TierBadge } from '../ui/TierBadge';
 
 interface Props {
   visible: boolean;
@@ -12,97 +13,89 @@ interface Props {
   onSelect: (tier: UserTier) => void;
 }
 
-export const SubscriptionModal: React.FC<Props> = ({ visible, onClose, onSelect }) => {
-  const choose = (tier: UserTier) => {
-    haptic.select();
-    onSelect(tier);
-  };
+const plans: { tier: UserTier; name: string; desc: string }[] = [
+  {
+    tier: 'free',
+    name: 'Free',
+    desc: 'The Dry Mile, basic field cards, and notes. The care decision is in the mile. The medical lesson is not.',
+  },
+  {
+    tier: 'pro',
+    name: 'Pro',
+    desc: 'Opens the Pro field cards and the medical inventory check. Still a preview. Still not a certification.',
+  },
+  {
+    tier: 'elite',
+    name: 'Elite',
+    desc: 'Educational modules behind an age check. No synthesis, no tactics course, no certificate.',
+  },
+];
 
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>Choose Tier</Text>
-
-          <GlassCard style={styles.plan}>
+export const SubscriptionModal: React.FC<Props> = ({ visible, onClose, onSelect }) => (
+    <Modal visible={visible} transparent animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={onClose}>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+      <View style={styles.sheet}>
+        <View style={styles.handle} />
+        <Text style={styles.kicker}>Demo flags</Text>
+        <Text style={styles.title}>Preview a tier</Text>
+        <Text style={styles.lede}>
+          These flags only change what this device can open. There is no purchase, no receipt, and no StoreKit.
+        </Text>
+        {plans.map((plan) => (
+          <GlassCard key={plan.tier} style={styles.plan} accent={plan.tier === 'elite' ? Colors.yellow : undefined}>
             <View style={styles.planRow}>
-              <TierBadge tier="free" />
               <View style={styles.planText}>
-                <Text style={styles.planName}>Free</Text>
-                <Text style={styles.planDesc}>5 basic skills</Text>
+                <View style={styles.planTitle}>
+                  <TierBadge tier={plan.tier} />
+                  <Text style={styles.planName}>{plan.name}</Text>
+                </View>
+                <Text style={styles.planDesc}>{plan.desc}</Text>
               </View>
-              <TouchableOpacity style={styles.cta} onPress={() => choose('free')}>
-                <Text style={styles.ctaText}>Select</Text>
+              <TouchableOpacity
+                testID={`tier-${plan.tier}`}
+                style={styles.cta}
+                onPress={() => {
+                  haptic.select();
+                  onSelect(plan.tier);
+                }}
+              >
+                <Text style={styles.ctaText}>Use</Text>
               </TouchableOpacity>
             </View>
           </GlassCard>
-
-          <GlassCard style={styles.plan}>
-            <View style={styles.planRow}>
-              <TierBadge tier="pro" />
-              <View style={styles.planText}>
-                <Text style={styles.planName}>Pro</Text>
-                <Text style={styles.planDesc}>All modules + scanner UI + offline placeholders</Text>
-              </View>
-              <TouchableOpacity style={styles.cta} onPress={() => choose('pro')}>
-                <Text style={styles.ctaText}>Select</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.price}>$9.99 / mo (stub)</Text>
-          </GlassCard>
-
-          <GlassCard style={[styles.plan, styles.elitePlan]}>
-            <View style={styles.planRow}>
-              <TierBadge tier="elite" />
-              <View style={styles.planText}>
-                <Text style={styles.planName}>Elite</Text>
-                <Text style={styles.planDesc}>Restricted educational modules (placeholders) + age gate</Text>
-              </View>
-              <TouchableOpacity style={styles.cta} onPress={() => choose('elite')}>
-                <Text style={styles.ctaText}>Select</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.price}>$19.99 / mo (stub)</Text>
-            <Text style={styles.disclaimer}>Educational only. No step-by-step harmful or illegal guidance.</Text>
-          </GlassCard>
-
-          <TouchableOpacity style={styles.closeBtn} onPress={() => { haptic.tap(); onClose(); }}>
-            <Text style={styles.closeText}>Close</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.footer}>
-            Purchases are not implemented in this build. Wire to StoreKit 2 or a vetted billing layer when you’re ready.
-          </Text>
-        </View>
+        ))}
+        <TouchableOpacity testID="close-tiers" style={styles.closeBtn} onPress={() => { haptic.tap(); onClose(); }}>
+          <Text style={styles.closeText}>Close</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
-  );
-};
+    </View>
+  </Modal>
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.82)' },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
-  handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 16 },
-  title: { color: Colors.text, fontSize: 20, fontWeight: '900', marginBottom: 12 },
-
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,10,8,0.78)' },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    borderTopWidth: 1,
+    borderColor: Colors.border,
+  },
+  handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 14 },
+  kicker: { fontFamily: sans, color: Colors.orange, fontSize: 11, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
+  title: { fontFamily: serif, color: Colors.text, fontSize: 28, fontWeight: '700', marginTop: 4 },
+  lede: { fontFamily: sans, color: Colors.muted, fontSize: 14, lineHeight: 20, marginTop: 8, marginBottom: 14 },
   plan: { padding: 14, marginBottom: 10 },
-  elitePlan: { borderWidth: 1, borderColor: 'rgba(255,214,10,0.45)' },
-
   planRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   planText: { flex: 1 },
-  planName: { color: Colors.text, fontSize: 16, fontWeight: '900' },
-  planDesc: { color: Colors.muted, fontSize: 12, marginTop: 2, lineHeight: 16 },
+  planTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  planName: { color: Colors.text, fontFamily: serif, fontSize: 18, fontWeight: '700' },
+  planDesc: { color: Colors.muted, fontFamily: sans, fontSize: 13, lineHeight: 18 },
   cta: { backgroundColor: Colors.green, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
-  ctaText: { color: '#000', fontWeight: '900' },
-
-  price: { color: Colors.muted, fontSize: 12, marginTop: 8 },
-  disclaimer: { color: Colors.muted, fontSize: 11, marginTop: 6, lineHeight: 15 },
-
-  closeBtn: { marginTop: 6, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#000' },
-  closeText: { color: Colors.text, fontSize: 15, fontWeight: '900' },
-
-  footer: { color: Colors.muted, fontSize: 11, marginTop: 10, lineHeight: 15 },
+  ctaText: { color: Colors.bg, fontFamily: sans, fontWeight: '800' },
+  closeBtn: { marginTop: 4, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: Colors.bg },
+  closeText: { color: Colors.text, fontFamily: sans, fontSize: 15, fontWeight: '700' },
 });

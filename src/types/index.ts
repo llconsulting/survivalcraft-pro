@@ -1,13 +1,10 @@
-export type UserTier = 'free' | 'pro' | 'elite';
+import type { ActiveRun, FieldNote, Grade, UserTier } from '../game/types';
 
-export interface UserState {
-  tier: UserTier;
-  level: number;
-  xp: number;
-  streak: number;
-  skillsCompleted: string[];
-  lastDailyOpDate?: string; // YYYY-MM-DD for streak logic
-  ageVerifiedElite?: boolean;
+export type { ActiveRun, FieldNote, Grade, UserTier };
+
+export interface SkillPrinciple {
+  id: string;
+  text: string;
 }
 
 export interface Skill {
@@ -15,23 +12,14 @@ export interface Skill {
   name: string;
   category: string;
   tier: UserTier;
-  progress: number;
   icon: string;
   color: string;
   description: string;
   content: string;
+  principles: SkillPrinciple[];
+  legId?: string;
   advanced?: string;
   restricted?: boolean;
-}
-
-export interface DailyOp {
-  id: number;
-  title: string;
-  desc: string;
-  completed: boolean;
-  icon: string;
-  color: string;
-  locked?: boolean;
 }
 
 export interface IntelItem {
@@ -40,4 +28,22 @@ export interface IntelItem {
   text: string;
   level: 'high' | 'medium' | 'low';
   source?: string;
+}
+
+export interface UserState {
+  tier: UserTier;
+  level: number;
+  xp: number;
+  streak: number;
+  lastTrainingDate?: string;
+  ageVerifiedElite: boolean;
+  reviewed: Record<string, string[]>;
+  bestGrades: Record<string, Grade>;
+  legsCleared: string[];
+  runsCompleted: number;
+  turnbacks: number;
+  bestSound: number;
+  settledRunIds: string[];
+  fieldNotes: FieldNote[];
+  activeRun: ActiveRun | null;
 }

@@ -19,13 +19,7 @@
       "bundleIdentifier": "com.survivalcraft.pro",
       "buildNumber": "1.0.0",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "fetch",
-          "remote-notification"
-        ],
-        "NSCameraUsageDescription": "SurvivalCraft uses the camera for the AR scan experience.",
-        "NSLocationWhenInUseUsageDescription": "SurvivalCraft can use your location for localized alerts and maps.",
-        "NSUserTrackingUsageDescription": "We do not track you across apps. (Placeholder if you later add tracking.)"
+        "NSCameraUsageDescription": "SurvivalCraft can show a camera viewfinder. It does not identify what the camera sees."
       }
     },
     "android": {
@@ -36,13 +30,14 @@
       "package": "com.survivalcraft.pro"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow SurvivalCraft to access your camera for scanning."
+          "cameraPermission": "SurvivalCraft can show a camera viewfinder. It does not identify what the camera sees."
         }
       ]
     ]

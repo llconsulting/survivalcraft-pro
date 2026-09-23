@@ -1,25 +1,25 @@
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Colors } from '../../theme/colors';
 
 interface Props {
   children: React.ReactNode;
-  style?: ViewStyle;
-  intensity?: number;
+  style?: StyleProp<ViewStyle>;
+  accent?: string;
 }
 
-export const GlassCard: React.FC<Props> = ({ children, style, intensity = 20 }) => (
-  <BlurView intensity={intensity} tint="dark" style={[styles.container, style]}>
+export const GlassCard: React.FC<Props> = ({ children, style, accent }) => (
+  <View style={[styles.container, accent ? { borderLeftWidth: 3, borderLeftColor: accent } : null, style]}>
     {children}
-  </BlurView>
+  </View>
 );
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(28, 28, 30, 0.72)',
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
     overflow: 'hidden',
   },
 });

@@ -1,20 +1,15 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import {
-  faCompass,
-  faLayerGroup,
-  faCamera,
-  faSatelliteDish,
-  faUserShield,
-} from '@fortawesome/free-solid-svg-icons';
+import { faBookOpen, faCompass, faLayerGroup, faSatelliteDish, faUser } from '@fortawesome/free-solid-svg-icons';
+import { Colors } from '../../theme/colors';
 
 const iconMap = {
   compass: faCompass,
   'layer-group': faLayerGroup,
-  camera: faCamera,
+  book: faBookOpen,
   'satellite-dish': faSatelliteDish,
-  'user-shield': faUserShield,
+  user: faUser,
 };
 
 interface Props {
@@ -28,28 +23,24 @@ export const TabBarIcon: React.FC<Props> = ({ icon, color, isCenter }) => {
     return (
       <View style={styles.centerContainer}>
         <View style={styles.centerButton}>
-          <FontAwesomeIcon icon={iconMap[icon]} size={24} color="#000" />
+          <FontAwesomeIcon icon={iconMap[icon]} size={20} color={Colors.bg} />
         </View>
       </View>
     );
   }
-  return <FontAwesomeIcon icon={iconMap[icon]} size={24} color={color} />;
+  return <FontAwesomeIcon icon={iconMap[icon]} size={20} color={color} />;
 };
 
 const styles = StyleSheet.create({
-  centerContainer: { marginTop: -20 },
+  centerContainer: { marginTop: -18 },
   centerButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#30d158',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.green,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#000',
-    shadowColor: '#30d158',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    borderWidth: 3,
+    borderColor: Colors.bg,
   },
 });
