@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -15,16 +16,39 @@ import OfflineMapsScreen from './src/screens/OfflineMapsScreen';
 import { TabBarIcon } from './src/components/ui/TabBarIcon';
 import { Colors } from './src/theme/colors';
 import { useUser } from './src/hooks/useUser';
+import { msUntilNextLocalMidnight } from './src/utils/dailyOpsLogic';
 
 const Tab = createBottomTabNavigator();
 const queryClient = new QueryClient();
 
 export default function App() {
-  const { hydrated, hydrate } = useUser();
+  const { hydrated, hydrate, syncCalendarDay } = useUser();
 
   useEffect(() => {
-    if (!hydrated) hydrate();
-  }, [hydrated, hydrate]);
+    if (!hydrated) {
+      void hydrate();
+      return;
+    }
+    syncCalendarDay();
+  }, [hydrated, hydrate, syncCalendarDay]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') syncCalendarDay();
+    });
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(() => {
+        syncCalendarDay();
+        schedule();
+      }, msUntilNextLocalMidnight());
+    };
+    schedule();
+    return () => {
+      sub.remove();
+      clearTimeout(timer);
+    };
+  }, [syncCalendarDay]);
 
   return (
     <SafeAreaProvider>
