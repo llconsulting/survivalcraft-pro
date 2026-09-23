@@ -42,6 +42,7 @@ After the site exists:
 7. Open **Site configuration → Build & deploy → Continuous deployment → Deploy contexts** and keep **Deploy Previews** enabled (on by default for a new site).
 8. Open the pull request below. Netlify should comment with a preview URL shaped like `https://deploy-preview-<PR-number>-<site-name>.netlify.app`. That preview is the URL that should return HTTP 200.
 
-Pull request branch: `cursor/netlify-web-preview-858b`.
+Pull request: https://github.com/llconsulting/survivalcraft-pro/pull/1
+Branch: `cursor/netlify-web-preview-858b`
 
 To make the site's own `https://<site-name>.netlify.app` address serve this branch before merge, set **Branch to deploy** in step 5 to `cursor/netlify-web-preview-858b` instead of `main`. That is still only a Netlify subdomain preview.
