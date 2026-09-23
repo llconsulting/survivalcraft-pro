@@ -6,8 +6,17 @@ export interface UserState {
   xp: number;
   streak: number;
   skillsCompleted: string[];
-  lastDailyOpDate?: string; // YYYY-MM-DD for streak logic
+  /** Last local calendar day (YYYY-MM-DD) that counted toward the streak. */
+  lastDailyOpDate?: string;
   ageVerifiedElite?: boolean;
+  /** Local calendar day the checklist below belongs to. */
+  dailyOpsDate?: string;
+  /** Op ids checked on dailyOpsDate. */
+  dailyOpsCompleted?: string[];
+  /** Streak to restore if today stops counting. */
+  streakCarry?: number;
+  /** lastDailyOpDate to restore if today stops counting. */
+  streakCarryFromDate?: string;
 }
 
 export interface Skill {
@@ -25,13 +34,10 @@ export interface Skill {
 }
 
 export interface DailyOp {
-  id: number;
+  id: string;
   title: string;
   desc: string;
-  completed: boolean;
-  icon: string;
-  color: string;
-  locked?: boolean;
+  proOnly: boolean;
 }
 
 export interface IntelItem {
