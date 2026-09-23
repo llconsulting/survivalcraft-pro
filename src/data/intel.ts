@@ -1,9 +1,9 @@
 import { IntelItem } from '../types';
 
 export const intelData: IntelItem[] = [
-  { time: '2m ago', type: 'alert', text: 'Grid instability: Northeast corridor (demo)', level: 'high', source: 'Simulated' },
-  { time: '15m ago', type: 'info', text: 'Supply chain: medical backorders widening (demo)', level: 'medium', source: 'Simulated' },
-  { time: '1h ago', type: 'update', text: 'Weather: storm activity increasing (demo)', level: 'high', source: 'Simulated' },
-  { time: '3h ago', type: 'intel', text: 'Finance: elevated consumer panic signals (demo)', level: 'low', source: 'Simulated' },
-  { time: '5h ago', type: 'alert', text: 'Municipal services incident reported (unconfirmed demo)', level: 'high', source: 'Simulated' },
+  { time: 'Sample', type: 'alert', text: 'Grid instability: Northeast corridor (static demo)', level: 'high', source: 'Static demo' },
+  { time: 'Sample', type: 'info', text: 'Supply chain: medical backorders widening (static demo)', level: 'medium', source: 'Static demo' },
+  { time: 'Sample', type: 'update', text: 'Weather: storm activity increasing (static demo)', level: 'high', source: 'Static demo' },
+  { time: 'Sample', type: 'intel', text: 'Finance: elevated consumer panic signals (static demo)', level: 'low', source: 'Static demo' },
+  { time: 'Sample', type: 'alert', text: 'Municipal services incident reported (unconfirmed static demo)', level: 'high', source: 'Static demo' },
 ];

@@ -1,20 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GlassCard } from '../components/ui/GlassCard';
 import { Colors } from '../theme/colors';
+import { sans, ui } from '../theme/type';
+import { GlassCard } from '../components/ui/GlassCard';
 
 export default function OfflineMapsScreen() {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.wrap}>
-        <Text style={styles.headerLabel}>OFFLINE TOOLING</Text>
-        <Text style={styles.headerTitle}>Offline Maps</Text>
-
+    <SafeAreaView style={ui.screen} edges={['top']}>
+      <View style={[ui.frame, styles.wrap]}>
+        <Text style={ui.kicker}>Not in this build</Text>
+        <Text style={ui.h1}>Maps</Text>
         <GlassCard style={styles.card}>
-          <Text style={styles.title}>Stubbed in this build</Text>
-          <Text style={styles.text}>
-            {`Offline map tiles are not implemented here. When you’re ready:\n- pick a map provider and licensing\n- implement region downloads + storage management\n- add routing + POI layers (optional)`}
+          <Text style={styles.title}>No tiles, no GPS</Text>
+          <Text style={styles.body}>
+            The Dry Mile uses a drawn route. This screen does not download maps, track a position, or route you anywhere.
           </Text>
         </GlassCard>
       </View>
@@ -23,11 +23,8 @@ export default function OfflineMapsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  wrap: { flex: 1, padding: 16 },
-  headerLabel: { color: Colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginTop: 8, marginBottom: 4 },
-  headerTitle: { color: Colors.text, fontSize: 32, fontWeight: '900', marginBottom: 16 },
-  card: { padding: 16 },
-  title: { color: Colors.text, fontWeight: '900', marginBottom: 8, fontSize: 16 },
-  text: { color: Colors.muted, lineHeight: 20 },
+  wrap: { paddingTop: 12 },
+  card: { padding: 16, marginTop: 16 },
+  title: { color: Colors.text, fontFamily: sans, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+  body: { color: Colors.muted, fontFamily: sans, fontSize: 15, lineHeight: 22 },
 });

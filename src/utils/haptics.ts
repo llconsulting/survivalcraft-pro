@@ -1,19 +1,15 @@
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-function run(action: () => Promise<void>) {
+function fire(fn: () => Promise<void>) {
   if (Platform.OS === 'web') return;
-  try {
-    void Promise.resolve(action()).catch(() => {});
-  } catch {
-    // Haptics are optional if the native module is unavailable.
-  }
+  fn().catch(() => undefined);
 }
 
 export const haptic = {
-  tap: () => run(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
-  confirm: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
-  warn: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
-  error: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),
-  select: () => run(() => Haptics.selectionAsync()),
+  tap: () => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
+  confirm: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
+  warn: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
+  error: () => fire(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),
+  select: () => fire(() => Haptics.selectionAsync()),
 };

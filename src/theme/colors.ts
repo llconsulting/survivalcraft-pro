@@ -1,15 +1,20 @@
 export const Colors = {
-  bg: '#000000',
-  surface: '#1c1c1e',
-  surface2: '#2c2c2e',
-  border: '#38383a',
-  text: '#ffffff',
-  muted: '#8e8e93',
+  bg: '#10140f',
+  surface: '#1a2218',
+  surface2: '#243026',
+  border: '#3c4a38',
+  text: '#f3efe4',
+  muted: '#b7c0ad',
+  green: '#d2e08a',
+  blue: '#8fbfcf',
+  orange: '#e2a33a',
+  red: '#e36a4f',
+  yellow: '#e6c15a',
+  purple: '#cbb7a2',
+} as const;
 
-  green: '#30d158',
-  blue: '#0a84ff',
-  orange: '#ff9500',
-  red: '#ff453a',
-  yellow: '#ffd60a',
-  purple: '#af52de',
+export const gradeColor = {
+  sound: Colors.green,
+  costly: Colors.orange,
+  risky: Colors.red,
 } as const;

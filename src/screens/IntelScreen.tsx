@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { GlassCard } from '../components/ui/GlassCard';
 import { intelData } from '../data/intel';
 import { Colors } from '../theme/colors';
+import { sans, serif, ui } from '../theme/type';
+import { GlassCard } from '../components/ui/GlassCard';
 
 const colorFor = (level: 'high' | 'medium' | 'low') => {
   if (level === 'high') return Colors.red;
@@ -14,60 +14,42 @@ const colorFor = (level: 'high' | 'medium' | 'low') => {
 
 export default function IntelScreen() {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.headerLabel}>SITUATIONAL AWARENESS</Text>
-          <Text style={styles.headerTitle}>Intel Feed</Text>
-        </View>
-
-        <GlassCard style={styles.disclaimer}>
-          <Text style={styles.disclaimerTitle}>This is a demo feed</Text>
-          <Text style={styles.disclaimerText}>
-            When you connect real sources, add provenance, timestamps, and confidence scoring.
-          </Text>
-        </GlassCard>
-
-        <View style={styles.list}>
-          {intelData.map((item, idx) => (
-            <GlassCard key={idx} style={styles.card}>
+    <SafeAreaView style={ui.screen} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={ui.frame}>
+          <Text style={ui.kicker}>Static demo</Text>
+          <Text style={ui.h1}>Wire</Text>
+          <GlassCard style={styles.banner} accent={Colors.red}>
+            <Text style={styles.bannerTitle}>Not a live feed</Text>
+            <Text style={styles.bannerBody}>
+              These lines are sample copy shipped with the app. They are not measured, not sourced from a wire, and not a reason to change a plan.
+            </Text>
+          </GlassCard>
+          {intelData.map((item) => (
+            <GlassCard key={item.text} style={styles.card}>
               <View style={styles.row}>
                 <Text style={styles.time}>{item.time}</Text>
-                <View style={[styles.pill, { backgroundColor: `${colorFor(item.level)}22`, borderColor: `${colorFor(item.level)}55` }]}>
-                  <Text style={[styles.pillText, { color: colorFor(item.level) }]}>{item.level.toUpperCase()}</Text>
-                </View>
+                <Text style={[styles.level, { color: colorFor(item.level) }]}>{item.level}</Text>
               </View>
               <Text style={styles.text}>{item.text}</Text>
-              {item.source ? <Text style={styles.source}>Source: {item.source}</Text> : null}
+              <Text style={styles.source}>{item.source ?? 'Static demo'}</Text>
             </GlassCard>
           ))}
         </View>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { flex: 1, padding: 16 },
-
-  header: { marginTop: 8, marginBottom: 16 },
-  headerLabel: { color: Colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 4 },
-  headerTitle: { color: Colors.text, fontSize: 32, fontWeight: '900' },
-
-  disclaimer: { padding: 14, marginBottom: 16 },
-  disclaimerTitle: { color: Colors.text, fontSize: 15, fontWeight: '900', marginBottom: 6 },
-  disclaimerText: { color: Colors.muted, fontSize: 13, lineHeight: 18 },
-
-  list: { gap: 12 },
-  card: { padding: 16, marginBottom: 12 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  time: { color: Colors.muted, fontSize: 12, fontWeight: '800' },
-  pill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
-  pillText: { fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
-
-  text: { color: Colors.text, fontSize: 14, lineHeight: 20 },
-  source: { color: Colors.muted, fontSize: 11, marginTop: 10 },
+  scroll: { paddingTop: 12, paddingBottom: 120 },
+  banner: { padding: 16, marginTop: 12, marginBottom: 14 },
+  bannerTitle: { color: Colors.text, fontFamily: serif, fontSize: 22, fontWeight: '700' },
+  bannerBody: { color: Colors.muted, fontFamily: sans, fontSize: 14, lineHeight: 20, marginTop: 6 },
+  card: { padding: 16, marginBottom: 10 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  time: { color: Colors.muted, fontFamily: sans, fontSize: 12, fontWeight: '700' },
+  level: { fontFamily: sans, fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
+  text: { color: Colors.text, fontFamily: sans, fontSize: 15, lineHeight: 21 },
+  source: { color: Colors.muted, fontFamily: sans, fontSize: 12, marginTop: 8 },
 });

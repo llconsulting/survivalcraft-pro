@@ -1,202 +1,207 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faLock } from '@fortawesome/free-solid-svg-icons';
-
 import { skillsData } from '../data/skills';
+import { skillStatusLabel, tierAllows } from '../game/progress';
+import { progressFor, skillRefs } from '../game/selectors';
 import { Skill, UserTier } from '../types';
-import { useUser } from '../hooks/useUser';
 import { Colors } from '../theme/colors';
+import { sans, serif, ui } from '../theme/type';
+import { useUser } from '../hooks/useUser';
+import { useTierPreview } from '../hooks/useTierPreview';
 import { haptic } from '../utils/haptics';
 import { SkillCard } from '../components/ui/SkillCard';
 import { TierBadge } from '../components/ui/TierBadge';
+import { MarkIcon } from '../components/ui/MarkIcon';
+import { SubscriptionModal } from '../components/modals/SubscriptionModal';
+import { AgeGateModal } from '../components/modals/AgeGateModal';
 
-export default function SkillsScreen() {
+type Nav = { navigate: (name: string) => void };
+
+const filters: { key: UserTier | 'all'; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'free', label: 'Free' },
+  { key: 'pro', label: 'Pro' },
+  { key: 'elite', label: 'Elite' },
+];
+
+export default function SkillsScreen({ navigation }: { navigation: Nav }) {
   const [filter, setFilter] = useState<UserTier | 'all'>('all');
   const [selected, setSelected] = useState<Skill | null>(null);
-  const { tier, ageVerifiedElite, completeSkill, addXP } = useUser();
+  const tier = useUser((state) => state.tier);
+  const reviewed = useUser((state) => state.reviewed);
+  const bestGrades = useUser((state) => state.bestGrades);
+  const ageVerifiedElite = useUser((state) => state.ageVerifiedElite);
+  const togglePrinciple = useUser((state) => state.togglePrinciple);
+  const tiers = useTierPreview();
 
-  const filtered = useMemo(() => {
-    return filter === 'all' ? skillsData : skillsData.filter(s => s.tier === filter);
-  }, [filter]);
-
-  const hasAccess = (skill: Skill) => {
-    if (skill.tier === 'free') return true;
-    if (skill.tier === 'pro') return tier !== 'free';
-    // elite:
-    return tier === 'elite' && !!ageVerifiedElite;
-  };
+  const filtered = useMemo(
+    () => (filter === 'all' ? skillsData : skillsData.filter((skill) => skill.tier === filter)),
+    [filter],
+  );
 
   const open = (skill: Skill) => {
     haptic.tap();
     setSelected(skill);
   };
 
-  const startTraining = (skill: Skill) => {
-    if (!hasAccess(skill)) return;
-    haptic.confirm();
-    completeSkill(skill.id);
-    addXP(150);
-  };
+  const allowed = (skill: Skill) => tierAllows(tier, skill.tier, !!ageVerifiedElite);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.headerLabel}>TRAINING MODULES</Text>
-          <Text style={styles.headerTitle}>Skill Tree</Text>
-        </View>
-
-        {/* Filter chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}>
-          {[
-            { key: 'all', label: 'All', color: Colors.text },
-            { key: 'free', label: 'Basic', color: Colors.green },
-            { key: 'pro', label: 'Pro', color: Colors.blue },
-            { key: 'elite', label: 'Elite', color: Colors.yellow },
-          ].map((f) => (
-            <TouchableOpacity
-              key={f.key}
-              onPress={() => { haptic.select(); setFilter(f.key as any); }}
-              style={[
-                styles.chip,
-                filter === f.key && { backgroundColor: Colors.text, borderColor: f.color },
-              ]}
-            >
-              <Text style={[
-                styles.chipText,
-                filter === f.key ? { color: '#000' } : { color: Colors.muted },
-              ]}>
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <View style={{ marginTop: 8 }}>
+    <SafeAreaView style={ui.screen} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={ui.frame}>
+          <Text style={ui.kicker}>Field cards</Text>
+          <Text style={ui.h1}>Skills</Text>
+          <Text style={[ui.muted, styles.lede]}>
+            Reading a card stops at 70. The Dry Mile is what marks a skill drilled. Nothing here is a certification.
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+            {filters.map((item) => {
+              const on = filter === item.key;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => { haptic.select(); setFilter(item.key); }}
+                  style={[styles.chip, on && styles.chipOn]}
+                >
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
           {filtered.map((skill) => {
-            const locked = !hasAccess(skill);
+            const progress = progressFor(skill.id, { reviewed, bestGrades });
+            const ref = skillRefs().find((item) => item.id === skill.id);
+            const status = skillStatusLabel(progress, !!ref?.legId);
             return (
-              <TouchableOpacity key={skill.id} activeOpacity={0.85} onPress={() => open(skill)}>
-                <SkillCard skill={skill} locked={locked} />
+              <TouchableOpacity key={skill.id} activeOpacity={0.88} onPress={() => open(skill)}>
+                <SkillCard skill={skill} locked={!allowed(skill)} progress={allowed(skill) ? progress : 0} status={status} />
               </TouchableOpacity>
             );
           })}
         </View>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Detail modal */}
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelected(null)}
-      >
-        <View style={styles.modalContainer}>
+      <Modal visible={!!selected} transparent animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={() => setSelected(null)}>
+        <View style={styles.modal}>
           <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setSelected(null)} />
           <View style={styles.sheet}>
             <View style={styles.handle} />
             {selected ? (
-              <>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.sheetHeader}>
-                  <View>
+                  <View style={styles.sheetTitles}>
                     <TierBadge tier={selected.tier} />
                     <Text style={styles.sheetTitle}>{selected.name}</Text>
                     <Text style={styles.sheetMeta}>{selected.category}</Text>
                   </View>
                   <TouchableOpacity onPress={() => { haptic.tap(); setSelected(null); }}>
-                    <View style={styles.close}>
-                      <Text style={styles.closeText}>✕</Text>
-                    </View>
+                    <Text style={styles.close}>Close</Text>
                   </TouchableOpacity>
                 </View>
 
-                {!hasAccess(selected) ? (
-                  <View style={styles.lockedBox}>
-                    <FontAwesomeIcon icon={faLock} size={44} color={Colors.yellow} />
-                    <Text style={styles.lockedTitle}>Locked</Text>
+                {!allowed(selected) ? (
+                  <View style={styles.locked}>
+                    <MarkIcon name="lock" color={Colors.yellow} size={36} />
+                    <Text style={styles.lockedTitle}>Preview locked</Text>
                     <Text style={styles.lockedText}>
-                      Pro unlocks Pro modules. Elite modules require Elite + age verification.
+                      {selected.tier === 'elite'
+                        ? 'Elite is an age-checked demo flag. The pages stay educational and non-actionable.'
+                        : 'Pro preview opens this lesson. The care decision in The Dry Mile stays free either way.'}
                     </Text>
+                    <TouchableOpacity style={ui.primary} onPress={() => { haptic.tap(); setSelected(null); navigation.navigate('Campaign'); }}>
+                      <Text style={ui.primaryText}>Open the mile</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[ui.ghost, styles.gap]} onPress={() => { haptic.tap(); tiers.setShowPlans(true); }}>
+                      <Text style={ui.ghostText}>Preview demo tiers</Text>
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   <>
-                    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                      <Text style={styles.contentText}>{selected.content}</Text>
-
-                      {selected.advanced ? (
-                        <View style={styles.advanced}>
-                          <Text style={[styles.advancedTitle, { color: selected.color }]}>★ Advanced Notes</Text>
-                          <Text style={styles.advancedText}>{selected.advanced}</Text>
-                        </View>
-                      ) : null}
-
-                      {selected.restricted ? (
-                        <View style={styles.restricted}>
-                          <Text style={styles.restrictedTitle}>⚠ Educational Only</Text>
-                          <Text style={styles.restrictedText}>
-                            This module stays non-actionable by design. No instructions for harm, wrongdoing, or illegal activity.
-                          </Text>
-                        </View>
-                      ) : null}
-                    </ScrollView>
-
-                    <TouchableOpacity style={styles.primary} onPress={() => startTraining(selected)}>
-                      <Text style={styles.primaryText}>Start Training</Text>
-                    </TouchableOpacity>
+                    {selected.content.split('\n\n').map((paragraph) => (
+                      <Text key={paragraph.slice(0, 20)} style={styles.content}>{paragraph}</Text>
+                    ))}
+                    {selected.advanced ? <Text style={styles.advanced}>{selected.advanced}</Text> : null}
+                    {selected.restricted ? (
+                      <Text style={styles.restricted}>Educational only. No instructions for harm, synthesis, or illegal activity.</Text>
+                    ) : null}
+                    <Text style={styles.principlesLabel}>Mark as read</Text>
+                    {selected.principles.map((principle) => {
+                      const on = (reviewed[selected.id] ?? []).includes(principle.id);
+                      return (
+                        <TouchableOpacity
+                          key={principle.id}
+                          testID={`principle-${principle.id}`}
+                          style={[styles.principle, on && styles.principleOn]}
+                          onPress={() => { haptic.select(); togglePrinciple(selected.id, principle.id); }}
+                        >
+                          <Text style={styles.principleMark}>{on ? 'Read' : '—'}</Text>
+                          <Text style={styles.principleText}>{principle.text}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                    <Text style={styles.cap}>
+                      {selected.legId
+                        ? 'A sound run of the matching leg drills this card. Reading alone will not.'
+                        : 'No scenario leg for this card yet. Reading stops at 70 and will not show as drilled.'}
+                    </Text>
+                    {selected.legId ? (
+                      <TouchableOpacity
+                        testID="practice-leg"
+                        style={[ui.primary, styles.gap]}
+                        onPress={() => { haptic.tap(); setSelected(null); navigation.navigate('Campaign'); }}
+                      >
+                        <Text style={ui.primaryText}>Practice in The Dry Mile</Text>
+                      </TouchableOpacity>
+                    ) : null}
                   </>
                 )}
-              </>
+              </ScrollView>
             ) : null}
           </View>
         </View>
       </Modal>
+      <SubscriptionModal visible={tiers.showPlans} onClose={() => tiers.setShowPlans(false)} onSelect={tiers.onSelect} />
+      <AgeGateModal visible={tiers.showAge} onClose={() => tiers.setShowAge(false)} onVerified={tiers.onVerified} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { flex: 1, padding: 16 },
-
-  header: { marginTop: 8, marginBottom: 16 },
-  headerLabel: { color: Colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4 },
-  headerTitle: { color: Colors.text, fontSize: 32, fontWeight: '900' },
-
-  filters: { marginBottom: 8 },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, marginRight: 8 },
-  chipText: { fontSize: 14, fontWeight: '800' },
-
-  modalContainer: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.82)' },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '90%' },
-  handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 16 },
-
+  scroll: { paddingTop: 12, paddingBottom: 120 },
+  lede: { marginTop: 8, marginBottom: 14 },
+  filters: { gap: 8, paddingBottom: 14 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  chipOn: { backgroundColor: Colors.text, borderColor: Colors.text },
+  chipText: { color: Colors.muted, fontFamily: sans, fontWeight: '800', fontSize: 13 },
+  chipTextOn: { color: Colors.bg },
+  modal: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,10,8,0.78)' },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '88%',
+  },
+  handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 14 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  sheetTitle: { color: Colors.text, fontSize: 26, fontWeight: '900', marginTop: 8 },
-  sheetMeta: { color: Colors.muted, marginTop: 4 },
-
-  close: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface2, justifyContent: 'center', alignItems: 'center' },
-  closeText: { color: Colors.text, fontSize: 18, fontWeight: '800' },
-
-  lockedBox: { alignItems: 'center', paddingVertical: 40 },
-  lockedTitle: { color: Colors.yellow, fontSize: 20, fontWeight: '900', marginTop: 10 },
-  lockedText: { color: Colors.muted, marginTop: 8, textAlign: 'center', lineHeight: 18 },
-
-  content: { marginTop: 8, marginBottom: 16 },
-  contentText: { color: Colors.text, fontSize: 15, lineHeight: 22 },
-
-  advanced: { marginTop: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, backgroundColor: 'rgba(255,255,255,0.03)' },
-  advancedTitle: { fontWeight: '900', marginBottom: 6 },
-  advancedText: { color: Colors.text, lineHeight: 20 },
-
-  restricted: { marginTop: 14, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,69,58,0.35)', backgroundColor: 'rgba(255,69,58,0.10)' },
-  restrictedTitle: { color: Colors.red, fontWeight: '900', marginBottom: 6 },
-  restrictedText: { color: Colors.muted, lineHeight: 18 },
-
-  primary: { backgroundColor: Colors.green, paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
-  primaryText: { color: '#000', fontSize: 16, fontWeight: '900' },
+  sheetTitles: { flex: 1, paddingRight: 12 },
+  sheetTitle: { color: Colors.text, fontFamily: serif, fontSize: 28, fontWeight: '700', marginTop: 8 },
+  sheetMeta: { color: Colors.muted, fontFamily: sans, marginTop: 2 },
+  close: { color: Colors.muted, fontFamily: sans, fontWeight: '700' },
+  content: { color: Colors.text, fontFamily: sans, fontSize: 15, lineHeight: 22, marginBottom: 10 },
+  advanced: { color: Colors.text, fontFamily: sans, fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  restricted: { color: Colors.red, fontFamily: sans, fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  principlesLabel: { color: Colors.muted, fontFamily: sans, fontSize: 12, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginTop: 6, marginBottom: 8 },
+  principle: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, marginBottom: 8, backgroundColor: Colors.bg },
+  principleOn: { borderColor: Colors.green },
+  principleMark: { color: Colors.green, fontFamily: sans, fontSize: 12, fontWeight: '800', width: 36 },
+  principleText: { color: Colors.text, fontFamily: sans, fontSize: 14, lineHeight: 20, flex: 1 },
+  cap: { color: Colors.muted, fontFamily: sans, fontSize: 13, lineHeight: 18, marginTop: 4 },
+  gap: { marginTop: 10 },
+  locked: { alignItems: 'flex-start', paddingVertical: 12, gap: 8 },
+  lockedTitle: { color: Colors.yellow, fontFamily: serif, fontSize: 24, fontWeight: '700' },
+  lockedText: { color: Colors.muted, fontFamily: sans, fontSize: 14, lineHeight: 20, marginBottom: 8 },
 });

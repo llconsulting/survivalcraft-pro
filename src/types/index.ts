@@ -1,22 +1,10 @@
-export type UserTier = 'free' | 'pro' | 'elite';
+import type { ActiveRun, FieldNote, Grade, UserTier } from '../game/types';
 
-export interface UserState {
-  tier: UserTier;
-  level: number;
-  xp: number;
-  streak: number;
-  skillsCompleted: string[];
-  /** Last local calendar day (YYYY-MM-DD) that counted toward the streak. */
-  lastDailyOpDate?: string;
-  ageVerifiedElite?: boolean;
-  /** Local calendar day the checklist below belongs to. */
-  dailyOpsDate?: string;
-  /** Op ids checked on dailyOpsDate. */
-  dailyOpsCompleted?: string[];
-  /** Streak to restore if today stops counting. */
-  streakCarry?: number;
-  /** lastDailyOpDate to restore if today stops counting. */
-  streakCarryFromDate?: string;
+export type { ActiveRun, FieldNote, Grade, UserTier };
+
+export interface SkillPrinciple {
+  id: string;
+  text: string;
 }
 
 export interface Skill {
@@ -24,20 +12,14 @@ export interface Skill {
   name: string;
   category: string;
   tier: UserTier;
-  progress: number;
   icon: string;
   color: string;
   description: string;
   content: string;
+  principles: SkillPrinciple[];
+  legId?: string;
   advanced?: string;
   restricted?: boolean;
-}
-
-export interface DailyOp {
-  id: string;
-  title: string;
-  desc: string;
-  proOnly: boolean;
 }
 
 export interface IntelItem {
@@ -46,4 +28,22 @@ export interface IntelItem {
   text: string;
   level: 'high' | 'medium' | 'low';
   source?: string;
+}
+
+export interface UserState {
+  tier: UserTier;
+  level: number;
+  xp: number;
+  streak: number;
+  lastTrainingDate?: string;
+  ageVerifiedElite: boolean;
+  reviewed: Record<string, string[]>;
+  bestGrades: Record<string, Grade>;
+  legsCleared: string[];
+  runsCompleted: number;
+  turnbacks: number;
+  bestSound: number;
+  settledRunIds: string[];
+  fieldNotes: FieldNote[];
+  activeRun: ActiveRun | null;
 }
