@@ -13,9 +13,10 @@ import { RouteTrack } from '../components/game/RouteTrack';
 import { TrailMark } from '../components/game/TrailMark';
 import { skillsData } from '../data/skills';
 
-type Nav = { navigate: (name: string) => void };
+type Nav = { navigate: (name: string, params?: object) => void };
+type Route = { params?: { focusLegId?: string | null } };
 
-export default function CampaignScreen({ navigation }: { navigation: Nav }) {
+export default function CampaignScreen({ navigation, route }: { navigation: Nav; route: Route }) {
   const hydrated = useUser((state) => state.hydrated);
   const run = useUser((state) => state.activeRun);
   const tier = useUser((state) => state.tier);
@@ -40,6 +41,7 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
   const phase = phaseOf(run, CAMPAIGN_LEGS.length);
   const leg = run ? CAMPAIGN_LEGS[run.legIndex] : undefined;
   const score = run ? scoreRun(run) : null;
+  const focusLeg = CAMPAIGN_LEGS.find((item) => item.id === route.params?.focusLegId) ?? null;
 
   const close = () => {
     haptic.tap();
@@ -48,7 +50,7 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <SafeAreaView style={ui.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroller} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={ui.frame}>
           <View style={styles.top}>
             <TouchableOpacity onPress={close} testID="close-mile">
@@ -68,6 +70,11 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
                 <Text style={styles.step}>3. A bad call spends margin and still teaches. You can run it again.</Text>
               </View>
               <Text style={styles.section}>Loadout</Text>
+              {focusLeg ? (
+                <Text style={styles.focus}>{focusLine(focusLeg)}</Text>
+              ) : (
+                <Text style={styles.focus}>Pick what you will carry, then press Start training. The button stays on screen.</Text>
+              )}
               {LOADOUTS.map((loadout) => {
                 const selected = loadout.id === loadoutId;
                 return (
@@ -78,7 +85,10 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
                     onPress={() => { haptic.select(); setLoadoutId(loadout.id); }}
                   >
                     <GlassCard style={styles.loadout} accent={selected ? Colors.green : undefined}>
-                      <Text style={styles.loadoutName}>{loadout.name}</Text>
+                      <View style={styles.loadoutHead}>
+                        <Text style={styles.loadoutName}>{loadout.name}</Text>
+                        <Text style={[styles.selected, selected && styles.selectedOn]}>{selected ? 'Selected' : 'Choose'}</Text>
+                      </View>
                       <Text style={styles.loadoutSummary}>{loadout.summary}</Text>
                       <Text style={styles.loadoutMeta}>
                         Water {loadout.resources.water} · Warmth {loadout.resources.warmth} · Energy {loadout.resources.energy} · Kit {loadout.resources.kit}
@@ -87,19 +97,13 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
                   </TouchableOpacity>
                 );
               })}
-              <TouchableOpacity
-                testID="start-mile"
-                style={[ui.primary, styles.gap]}
-                onPress={() => { haptic.confirm(); startRun(loadoutId); }}
-              >
-                <Text style={ui.primaryText}>Start the mile</Text>
-              </TouchableOpacity>
             </>
           ) : null}
 
           {run && phase !== 'setup' ? (
             <>
               <Text style={ui.h2}>{CAMPAIGN_TITLE}</Text>
+              {focusLeg ? <Text style={styles.focus}>{focusLine(focusLeg)}</Text> : null}
               <RouteTrack legIndex={run.legIndex} status={run.status} />
               <GlassCard style={styles.meters}>
                 <ResourceMeters resources={run.resources} />
@@ -159,13 +163,6 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
                   {RESOURCE_LABEL[run.pending.critical]} ran out. Turning back still keeps the lesson.
                 </Text>
               ) : null}
-              <TouchableOpacity
-                testID="continue-leg"
-                style={[ui.primary, styles.gapLarge]}
-                onPress={() => { haptic.confirm(); continueRun(); }}
-              >
-                <Text style={ui.primaryText}>{continueLabel(run, CAMPAIGN_LEGS.length)}</Text>
-              </TouchableOpacity>
             </>
           ) : null}
 
@@ -206,8 +203,38 @@ export default function CampaignScreen({ navigation }: { navigation: Nav }) {
           ) : null}
         </View>
       </ScrollView>
+      {phase === 'setup' ? (
+        <View style={styles.dock}>
+          <TouchableOpacity
+            testID="start-training"
+            style={[ui.primary, styles.dockButton]}
+            onPress={() => { haptic.confirm(); startRun(loadoutId); }}
+          >
+            <Text style={ui.primaryText}>Start training</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      {phase === 'outcome' && run ? (
+        <View style={styles.dock}>
+          <TouchableOpacity
+            testID="continue-leg"
+            style={[ui.primary, styles.dockButton]}
+            onPress={() => { haptic.confirm(); continueRun(); }}
+          >
+            <Text style={ui.primaryText}>{continueLabel(run, CAMPAIGN_LEGS.length)}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
+}
+
+function focusLine(leg: (typeof CAMPAIGN_LEGS)[number]): string {
+  const names = leg.skillIds
+    .map((id) => skillsData.find((skill) => skill.id === id)?.name)
+    .filter((name): name is string => !!name);
+  const what = names.length ? names.join(' and ') : leg.short;
+  return `${what} clears on the ${leg.short} leg. Press Start training, then walk the legs in order. This does not skip ahead.`;
 }
 
 function thin(resources: { water: number; warmth: number; energy: number }): boolean {
@@ -225,7 +252,8 @@ function trainedLine(ids: string[], tier: string): string {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingTop: 8, paddingBottom: 48 },
+  scroller: { flex: 1 },
+  scroll: { paddingTop: 8, paddingBottom: 96 },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   close: { color: Colors.muted, fontFamily: sans, fontSize: 14, fontWeight: '700' },
   gap: { marginTop: 12 },
@@ -242,8 +270,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
+  focus: { color: Colors.text, fontFamily: sans, fontSize: 14, lineHeight: 20, marginBottom: 10 },
   loadout: { padding: 14, marginBottom: 10 },
-  loadoutName: { color: Colors.text, fontFamily: serif, fontSize: 20, fontWeight: '700' },
+  loadoutHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  loadoutName: { color: Colors.text, fontFamily: serif, fontSize: 20, fontWeight: '700', flexShrink: 1 },
+  selected: { color: Colors.muted, fontFamily: sans, fontSize: 12, fontWeight: '800' },
+  selectedOn: { color: Colors.green },
   loadoutSummary: { color: Colors.muted, fontFamily: sans, fontSize: 14, lineHeight: 20, marginTop: 4 },
   loadoutMeta: { color: Colors.text, fontFamily: sans, fontSize: 12, marginTop: 8 },
   meters: { padding: 14, marginBottom: 16 },
@@ -273,4 +305,18 @@ const styles = StyleSheet.create({
   lesson: { padding: 14, marginBottom: 10 },
   lessonGrade: { fontFamily: sans, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
   lessonBody: { color: Colors.text, fontFamily: sans, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  dock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+  },
+  dockButton: { width: '100%', maxWidth: 728 },
 });

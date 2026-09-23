@@ -67,7 +67,7 @@ export const AgeGateModal: React.FC<Props> = ({ visible, onClose, onVerified }) 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,10,8,0.78)' },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, zIndex: 2 },
   handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 14 },
   kicker: { fontFamily: sans, color: Colors.orange, fontSize: 11, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
   title: { fontFamily: serif, color: Colors.text, fontSize: 28, fontWeight: '700', marginBottom: 12 },

@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderColor: Colors.border,
+    zIndex: 2,
   },
   handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 14 },
   kicker: { fontFamily: sans, color: Colors.orange, fontSize: 11, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },

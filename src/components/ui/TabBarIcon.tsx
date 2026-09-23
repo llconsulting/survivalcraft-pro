@@ -1,10 +1,11 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faBookOpen, faCompass, faLayerGroup, faSatelliteDish, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faBookOpen, faCompass, faHouse, faLayerGroup, faSatelliteDish, faUser } from '@fortawesome/free-solid-svg-icons';
 import { Colors } from '../../theme/colors';
 
 const iconMap = {
+  home: faHouse,
   compass: faCompass,
   'layer-group': faLayerGroup,
   book: faBookOpen,

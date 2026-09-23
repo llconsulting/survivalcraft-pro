@@ -5,6 +5,7 @@ import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import HomeScreen from './src/screens/HomeScreen';
 import BaseScreen from './src/screens/BaseScreen';
 import SkillsScreen from './src/screens/SkillsScreen';
 import ARScreen from './src/screens/ARScreen';
@@ -45,6 +46,7 @@ export default function App() {
       <NavigationContainer theme={navTheme}>
         <StatusBar style="light" translucent backgroundColor="transparent" />
         <Tab.Navigator
+          initialRouteName="Home"
           screenOptions={{
             headerShown: false,
             tabBarStyle: {
@@ -60,6 +62,13 @@ export default function App() {
             tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
           }}
         >
+          <Tab.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{
+              tabBarIcon: ({ color }) => <TabBarIcon icon="home" color={color} />,
+            }}
+          />
           <Tab.Screen
             name="Base"
             component={BaseScreen}

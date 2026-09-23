@@ -139,6 +139,8 @@ export const useUser = create<UserStore>((set, get) => ({
       const next = normalize(saved);
       set({ ...next, hydrated: true });
       if (saved) void setJSON(STORAGE_KEY, next);
+    } catch {
+      if (!get().hydrated) set({ ...defaultState, hydrated: true });
     } finally {
       hydrating = false;
     }

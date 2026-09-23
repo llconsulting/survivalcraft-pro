@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { skillsData } from '../data/skills';
 import { skillStatusLabel, tierAllows } from '../game/progress';
 import { progressFor, skillRefs } from '../game/selectors';
+import { trainingStart } from '../game/training';
 import { Skill, UserTier } from '../types';
 import { Colors } from '../theme/colors';
 import { sans, serif, ui } from '../theme/type';
@@ -16,7 +17,7 @@ import { MarkIcon } from '../components/ui/MarkIcon';
 import { SubscriptionModal } from '../components/modals/SubscriptionModal';
 import { AgeGateModal } from '../components/modals/AgeGateModal';
 
-type Nav = { navigate: (name: string) => void };
+type Nav = { navigate: (name: string, params?: object) => void };
 
 const filters: { key: UserTier | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -28,6 +29,7 @@ const filters: { key: UserTier | 'all'; label: string }[] = [
 export default function SkillsScreen({ navigation }: { navigation: Nav }) {
   const [filter, setFilter] = useState<UserTier | 'all'>('all');
   const [selected, setSelected] = useState<Skill | null>(null);
+  const [drill, setDrill] = useState<{ id: string; step: number } | null>(null);
   const tier = useUser((state) => state.tier);
   const reviewed = useUser((state) => state.reviewed);
   const bestGrades = useUser((state) => state.bestGrades);
@@ -42,10 +44,65 @@ export default function SkillsScreen({ navigation }: { navigation: Nav }) {
 
   const open = (skill: Skill) => {
     haptic.tap();
+    setDrill(null);
     setSelected(skill);
   };
 
+  const close = () => {
+    haptic.tap();
+    setDrill(null);
+    setSelected(null);
+  };
+
   const allowed = (skill: Skill) => tierAllows(tier, skill.tier, !!ageVerifiedElite);
+  const drillStep = selected && drill?.id === selected.id ? drill.step : null;
+
+  const onTrainingPress = () => {
+    if (!selected) return;
+    const action = trainingStart(selected, tier, !!ageVerifiedElite);
+    haptic.confirm();
+    if (action.kind === 'mile') {
+      setDrill(null);
+      setSelected(null);
+      navigation.navigate('Campaign', { focusLegId: action.legId });
+      return;
+    }
+    if (action.kind === 'locked') {
+      if (action.legId) {
+        setDrill(null);
+        setSelected(null);
+        navigation.navigate('Campaign', { focusLegId: action.legId });
+        return;
+      }
+      tiers.setShowPlans(true);
+      return;
+    }
+    const count = selected.principles.length;
+    if (drillStep === null) {
+      setDrill({ id: selected.id, step: 0 });
+      return;
+    }
+    if (drillStep >= count) {
+      close();
+      return;
+    }
+    const principle = selected.principles[drillStep];
+    const marked = (reviewed[selected.id] ?? []).includes(principle.id);
+    if (!marked) togglePrinciple(selected.id, principle.id);
+    setDrill({ id: selected.id, step: drillStep + 1 });
+  };
+
+  const trainingLabel = () => {
+    if (!selected) return 'Start training';
+    const action = trainingStart(selected, tier, !!ageVerifiedElite);
+    if (action.kind === 'locked' && !action.legId) return 'Preview demo tiers';
+    if (action.kind !== 'read') return 'Start training';
+    const count = selected.principles.length;
+    if (drillStep === null) return 'Start training';
+    if (drillStep >= count) return 'Close';
+    if (drillStep === count - 1) return 'Log training';
+    return 'Next';
+  };
 
   return (
     <SafeAreaView style={ui.screen} edges={['top']}>
@@ -83,81 +140,86 @@ export default function SkillsScreen({ navigation }: { navigation: Nav }) {
         </View>
       </ScrollView>
 
-      <Modal visible={!!selected} transparent animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={() => setSelected(null)}>
+      <Modal visible={!!selected} transparent animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={close}>
         <View style={styles.modal}>
-          <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setSelected(null)} />
+          <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={close} />
           <View style={styles.sheet}>
             <View style={styles.handle} />
             {selected ? (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.sheetHeader}>
-                  <View style={styles.sheetTitles}>
-                    <TierBadge tier={selected.tier} />
-                    <Text style={styles.sheetTitle}>{selected.name}</Text>
-                    <Text style={styles.sheetMeta}>{selected.category}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => { haptic.tap(); setSelected(null); }}>
-                    <Text style={styles.close}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {!allowed(selected) ? (
-                  <View style={styles.locked}>
-                    <MarkIcon name="lock" color={Colors.yellow} size={36} />
-                    <Text style={styles.lockedTitle}>Preview locked</Text>
-                    <Text style={styles.lockedText}>
-                      {selected.tier === 'elite'
-                        ? 'Elite is an age-checked demo flag. The pages stay educational and non-actionable.'
-                        : 'Pro preview opens this lesson. The care decision in The Dry Mile stays free either way.'}
-                    </Text>
-                    <TouchableOpacity style={ui.primary} onPress={() => { haptic.tap(); setSelected(null); navigation.navigate('Campaign'); }}>
-                      <Text style={ui.primaryText}>Open the mile</Text>
+              <>
+                <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
+                  <View style={styles.sheetHeader}>
+                    <View style={styles.sheetTitles}>
+                      <TierBadge tier={selected.tier} />
+                      <Text style={styles.sheetTitle}>{selected.name}</Text>
+                      <Text style={styles.sheetMeta}>{selected.category}</Text>
+                    </View>
+                    <TouchableOpacity onPress={close}>
+                      <Text style={styles.close}>Close</Text>
                     </TouchableOpacity>
+                  </View>
+
+                  {!allowed(selected) ? (
+                    <View style={styles.locked}>
+                      <MarkIcon name="lock" color={Colors.yellow} size={36} />
+                      <Text style={styles.lockedTitle}>Preview locked</Text>
+                      <Text style={styles.lockedText}>
+                        {selected.tier === 'elite'
+                          ? 'Elite is an age-checked demo flag. The pages stay educational and non-actionable.'
+                          : 'Pro preview opens this lesson. The care decision in The Dry Mile stays free either way.'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      {selected.content.split('\n\n').map((paragraph) => (
+                        <Text key={paragraph.slice(0, 20)} style={styles.content}>{paragraph}</Text>
+                      ))}
+                      {selected.advanced ? <Text style={styles.advanced}>{selected.advanced}</Text> : null}
+                      {selected.restricted ? (
+                        <Text style={styles.restricted}>Educational only. No instructions for harm, synthesis, or illegal activity.</Text>
+                      ) : null}
+                      <Text style={styles.principlesLabel}>Mark as read</Text>
+                      {selected.principles.map((principle) => {
+                        const on = (reviewed[selected.id] ?? []).includes(principle.id);
+                        return (
+                          <TouchableOpacity
+                            key={principle.id}
+                            testID={`principle-${principle.id}`}
+                            style={[styles.principle, on && styles.principleOn]}
+                            onPress={() => { haptic.select(); togglePrinciple(selected.id, principle.id); }}
+                          >
+                            <Text style={styles.principleMark}>{on ? 'Read' : '—'}</Text>
+                            <Text style={styles.principleText}>{principle.text}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                      <Text style={styles.cap}>
+                        {selected.legId
+                          ? 'A sound run of the matching leg drills this card. Reading alone will not.'
+                          : 'No scenario leg for this card yet. Reading stops at 70 and will not show as drilled.'}
+                      </Text>
+                    </>
+                  )}
+                </ScrollView>
+                <View style={styles.footer}>
+                  {drillStep !== null && drillStep < selected.principles.length ? (
+                    <Text style={styles.stepLine}>
+                      Step {drillStep + 1} of {selected.principles.length}. {selected.principles[drillStep].text}
+                    </Text>
+                  ) : null}
+                  {drillStep !== null && drillStep >= selected.principles.length ? (
+                    <Text style={styles.stepLine}>Logged on this device. Reading stops at 70. This card has no mile leg.</Text>
+                  ) : null}
+                  <TouchableOpacity testID="start-training" style={ui.primary} onPress={onTrainingPress}>
+                    <Text style={ui.primaryText}>{trainingLabel()}</Text>
+                  </TouchableOpacity>
+                  {!allowed(selected) && selected.legId ? (
                     <TouchableOpacity style={[ui.ghost, styles.gap]} onPress={() => { haptic.tap(); tiers.setShowPlans(true); }}>
                       <Text style={ui.ghostText}>Preview demo tiers</Text>
                     </TouchableOpacity>
-                  </View>
-                ) : (
-                  <>
-                    {selected.content.split('\n\n').map((paragraph) => (
-                      <Text key={paragraph.slice(0, 20)} style={styles.content}>{paragraph}</Text>
-                    ))}
-                    {selected.advanced ? <Text style={styles.advanced}>{selected.advanced}</Text> : null}
-                    {selected.restricted ? (
-                      <Text style={styles.restricted}>Educational only. No instructions for harm, synthesis, or illegal activity.</Text>
-                    ) : null}
-                    <Text style={styles.principlesLabel}>Mark as read</Text>
-                    {selected.principles.map((principle) => {
-                      const on = (reviewed[selected.id] ?? []).includes(principle.id);
-                      return (
-                        <TouchableOpacity
-                          key={principle.id}
-                          testID={`principle-${principle.id}`}
-                          style={[styles.principle, on && styles.principleOn]}
-                          onPress={() => { haptic.select(); togglePrinciple(selected.id, principle.id); }}
-                        >
-                          <Text style={styles.principleMark}>{on ? 'Read' : '—'}</Text>
-                          <Text style={styles.principleText}>{principle.text}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                    <Text style={styles.cap}>
-                      {selected.legId
-                        ? 'A sound run of the matching leg drills this card. Reading alone will not.'
-                        : 'No scenario leg for this card yet. Reading stops at 70 and will not show as drilled.'}
-                    </Text>
-                    {selected.legId ? (
-                      <TouchableOpacity
-                        testID="practice-leg"
-                        style={[ui.primary, styles.gap]}
-                        onPress={() => { haptic.tap(); setSelected(null); navigation.navigate('Campaign'); }}
-                      >
-                        <Text style={ui.primaryText}>Practice in The Dry Mile</Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </>
-                )}
-              </ScrollView>
+                  ) : null}
+                </View>
+              </>
             ) : null}
           </View>
         </View>
@@ -184,7 +246,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 20,
     maxHeight: '88%',
+    zIndex: 2,
   },
+  sheetScroll: { flexGrow: 0, maxHeight: 420 },
+  footer: { paddingTop: 12 },
+  stepLine: { color: Colors.text, fontFamily: sans, fontSize: 14, lineHeight: 20, marginBottom: 10 },
   handle: { width: 36, height: 5, backgroundColor: Colors.border, borderRadius: 3, alignSelf: 'center', marginBottom: 14 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   sheetTitles: { flex: 1, paddingRight: 12 },

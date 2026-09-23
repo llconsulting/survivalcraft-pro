@@ -16,7 +16,7 @@ import { ResourceMeters } from '../components/game/ResourceMeters';
 import { SubscriptionModal } from '../components/modals/SubscriptionModal';
 import { AgeGateModal } from '../components/modals/AgeGateModal';
 
-type Nav = { navigate: (name: string) => void };
+type Nav = { navigate: (name: string, params?: object) => void };
 
 const links = [
   { route: 'Skills', title: 'Field cards', meta: 'Lessons that feed the mile' },
@@ -70,7 +70,7 @@ export default function BaseScreen({ navigation }: { navigation: Nav }) {
             <TouchableOpacity
               testID="open-campaign"
               style={[ui.primary, styles.cta]}
-              onPress={() => { haptic.tap(); navigation.navigate('Campaign'); }}
+              onPress={() => { haptic.tap(); navigation.navigate('Campaign', { focusLegId: null }); }}
             >
               <Text style={ui.primaryText}>{phase === 'setup' ? 'Play' : 'Open'}</Text>
             </TouchableOpacity>
@@ -102,7 +102,14 @@ export default function BaseScreen({ navigation }: { navigation: Nav }) {
                 key={op.id}
                 testID={`op-${op.id}`}
                 activeOpacity={0.85}
-                onPress={() => { haptic.tap(); navigation.navigate('Campaign'); }}
+                onPress={() => {
+                  haptic.tap();
+                  if (status === 'locked') {
+                    tiers.setShowPlans(true);
+                    return;
+                  }
+                  navigation.navigate('Campaign', { focusLegId: op.legId });
+                }}
               >
                 <GlassCard style={styles.op}>
                   <View style={styles.row}>
@@ -120,7 +127,7 @@ export default function BaseScreen({ navigation }: { navigation: Nav }) {
           })}
           {user.tier === 'free' ? (
             <TouchableOpacity testID="open-tiers" onPress={() => { haptic.tap(); tiers.setShowPlans(true); }}>
-              <Text style={styles.tierLink}>Medical inventory is a Pro preview flag. No purchase.</Text>
+              <Text style={styles.tierLink}>Medical inventory is a Pro preview. No purchase. The care decision in the mile stays free.</Text>
             </TouchableOpacity>
           ) : null}
 
