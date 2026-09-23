@@ -40,7 +40,7 @@ The first production build of `main` can fail until this pull request is merged,
 After the site exists:
 
 7. Open **Site configuration → Build & deploy → Continuous deployment → Deploy contexts** and keep **Deploy Previews** enabled (on by default for a new site).
-8. Open the pull request below. Netlify should comment with a preview URL shaped like `https://deploy-preview-<PR-number>-<site-name>.netlify.app`. That preview is the URL that should return HTTP 200.
+8. Open https://github.com/llconsulting/survivalcraft-pro/pull/1. Netlify should comment with a preview URL shaped like `https://deploy-preview-1-<site-name>.netlify.app`. That preview is the URL that should return HTTP 200.
 
 Pull request: https://github.com/llconsulting/survivalcraft-pro/pull/1
 Branch: `cursor/netlify-web-preview-858b`
