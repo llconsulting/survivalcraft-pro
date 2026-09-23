@@ -1,16 +1,19 @@
 import { create } from 'zustand';
 import { UserState, UserTier } from '../types';
 import { getJSON, setJSON } from '../utils/storage';
+import { normalizeStoredUser, toggleDailyOpState } from '../utils/dailyOpsLogic';
 
 const STORAGE_KEY = 'sc_user_v1';
 
 interface UserStore extends UserState {
   hydrated: boolean;
   hydrate: () => Promise<void>;
+  syncCalendarDay: () => void;
   setTier: (tier: UserTier) => void;
   verifyEliteAge: () => void;
   addXP: (amount: number) => void;
   completeSkill: (skillId: string) => void;
+  toggleDailyOp: (opId: string) => void;
   reset: () => Promise<void>;
 }
 
@@ -22,51 +25,99 @@ const defaultState: UserState = {
   skillsCompleted: ['water'],
   lastDailyOpDate: undefined,
   ageVerifiedElite: false,
+  dailyOpsDate: undefined,
+  dailyOpsCompleted: [],
+  streakCarry: 0,
+  streakCarryFromDate: undefined,
 };
 
-export const useUser = create<UserStore>((set, get) => ({
-  ...defaultState,
-  hydrated: false,
+function snapshot(state: UserState): UserState {
+  return {
+    tier: state.tier,
+    level: state.level,
+    xp: state.xp,
+    streak: state.streak,
+    skillsCompleted: state.skillsCompleted,
+    lastDailyOpDate: state.lastDailyOpDate,
+    ageVerifiedElite: state.ageVerifiedElite,
+    dailyOpsDate: state.dailyOpsDate,
+    dailyOpsCompleted: state.dailyOpsCompleted,
+    streakCarry: state.streakCarry,
+    streakCarryFromDate: state.streakCarryFromDate,
+  };
+}
 
-  hydrate: async () => {
-    const saved = await getJSON<UserState>(STORAGE_KEY);
-    if (saved) set({ ...saved, hydrated: true });
-    else set({ hydrated: true });
-  },
+export const useUser = create<UserStore>((set, get) => {
+  let hydratePromise: Promise<void> | null = null;
 
-  setTier: (tier) => {
-    const next: Partial<UserState> = { tier };
-    // If they downgrade, keep age flag but access logic is elsewhere.
-    set(next as any);
-    setJSON(STORAGE_KEY, { ...get(), ...next });
-  },
+  const commit = (next: UserState) => {
+    const prev = snapshot(get());
+    if (JSON.stringify(prev) === JSON.stringify(next)) return;
+    set(next);
+    void setJSON(STORAGE_KEY, next);
+  };
 
-  verifyEliteAge: () => {
-    const next: Partial<UserState> = { ageVerifiedElite: true };
-    set(next as any);
-    setJSON(STORAGE_KEY, { ...get(), ...next });
-  },
+  return {
+    ...defaultState,
+    hydrated: false,
 
-  addXP: (amount) => {
-    const state = get();
-    const xp = state.xp + amount;
-    const level = Math.floor(xp / 1000) + 1;
-    const next: Partial<UserState> = { xp, level };
-    set(next as any);
-    setJSON(STORAGE_KEY, { ...get(), ...next });
-  },
+    hydrate: () => {
+      if (get().hydrated) return Promise.resolve();
+      if (!hydratePromise) {
+        hydratePromise = (async () => {
+          try {
+            const saved = await getJSON<Partial<UserState>>(STORAGE_KEY);
+            if (get().hydrated) return;
+            const next = normalizeStoredUser(saved ?? null);
+            set({ ...next, hydrated: true });
+            if (JSON.stringify(saved) !== JSON.stringify(next)) {
+              await setJSON(STORAGE_KEY, next);
+            }
+          } finally {
+            hydratePromise = null;
+          }
+        })();
+      }
+      return hydratePromise;
+    },
 
-  completeSkill: (skillId) => {
-    const state = get();
-    if (state.skillsCompleted.includes(skillId)) return;
-    const skillsCompleted = [...state.skillsCompleted, skillId];
-    const next: Partial<UserState> = { skillsCompleted };
-    set(next as any);
-    setJSON(STORAGE_KEY, { ...get(), ...next });
-  },
+    syncCalendarDay: () => {
+      if (!get().hydrated) return;
+      commit(normalizeStoredUser(snapshot(get())));
+    },
 
-  reset: async () => {
-    set({ ...defaultState, hydrated: true } as any);
-    await setJSON(STORAGE_KEY, defaultState);
-  },
-}));
+    setTier: (tier) => {
+      commit(normalizeStoredUser({ ...snapshot(get()), tier }));
+    },
+
+    verifyEliteAge: () => {
+      commit(normalizeStoredUser({ ...snapshot(get()), ageVerifiedElite: true }));
+    },
+
+    addXP: (amount) => {
+      const state = snapshot(get());
+      const xp = state.xp + amount;
+      const level = Math.floor(xp / 1000) + 1;
+      commit(normalizeStoredUser({ ...state, xp, level }));
+    },
+
+    completeSkill: (skillId) => {
+      const state = snapshot(get());
+      if (state.skillsCompleted.includes(skillId)) return;
+      commit(normalizeStoredUser({
+        ...state,
+        skillsCompleted: [...state.skillsCompleted, skillId],
+      }));
+    },
+
+    toggleDailyOp: (opId) => {
+      commit(toggleDailyOpState(snapshot(get()), opId));
+    },
+
+    reset: async () => {
+      const next = normalizeStoredUser(defaultState);
+      set({ ...next, hydrated: true });
+      await setJSON(STORAGE_KEY, next);
+    },
+  };
+});

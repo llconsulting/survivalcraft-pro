@@ -1,0 +1,15 @@
+# Static Expo web export for a preview site. This is not an iOS production build.
+[build]
+  command = "npm run build:web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  CI = "true"
+  EXPO_NO_TELEMETRY = "1"
+
+# Client-side routes (React Navigation) fall back to the SPA shell.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
